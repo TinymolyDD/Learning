@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 
 class MyString {
  public:
@@ -44,59 +45,64 @@ class MyString {
    public:
     typedef CharT value_type;
     typedef value_type& reference;
+    typedef std::ptrdiff_t difference_type;
+    typedef CharT* pointer;
+    typedef std::random_access_iterator_tag iterator_category;
 
    private:
     typedef Iterator<CharT> iterator;
 
    public:
-    Iterator(CharT* element_ptr) : element_ptr_(element_ptr) {}
-    Iterator() : element_ptr_(nullptr) {}
+    Iterator(CharT* element_ptr) : data_(element_ptr) {}
+    Iterator() : data_(nullptr) {}
 
-    reference operator*() const { return *element_ptr_; }
+    reference operator*() const { return *data_; }
 
     iterator& operator++() {
-      ++element_ptr_;
+      ++data_;
       return *this;
     }
 
-    iterator operator++(int) { return {element_ptr_++}; }
+    iterator operator++(int) { return {data_++}; }
 
     iterator& operator--() {
-      --element_ptr_;
+      --data_;
       return *this;
     }
 
-    iterator operator--(int) { return {element_ptr_--}; }
+    iterator operator--(int) { return {data_--}; }
 
     iterator& operator+=(difference_type n) {
-      element_ptr_ += n;
+      data_ += n;
       return *this;
     }
 
     iterator& operator-=(difference_type n) {
-      element_ptr_ -= n;
+      data_ -= n;
       return *this;
     }
 
-    iterator operator+(difference_type n) const { return {element_ptr_ + n}; }
+    iterator operator+(difference_type n) const { return {data_ + n}; }
 
-    iterator operator-(difference_type n) const { return {element_ptr_ - n}; }
+    iterator operator-(difference_type n) const { return {data_ - n}; }
 
     reference operator[](difference_type n) const {
-      return *(element_ptr_ + n);
+      return *(data_ + n);
     }
 
     difference_type operator-(iterator it) const {
-      return this->element_ptr_ - it.element_ptr_;
+      return this->data_ - it.data_;
     }
 
     bool operator<(iterator it) const { return *this - it < 0; }
     bool operator>(iterator it) const { return *this - it > 0; }
     bool operator>=(iterator it) const { return *this - it >= 0; }
     bool operator<=(iterator it) const { return *this - it <= 0; }
+    bool operator!=(iterator it) const { return *this - it != 0; }
+    bool operator==(iterator it) const { return *this - it == 0; }
 
    private:
-    CharT* element_ptr_;
+    CharT* data_;
   };
 
  public:
@@ -147,21 +153,28 @@ class MyString {
   MyString& insert(size_type index, const char* s);
   MyString& insert(size_type index, const char* s, size_type count);
   MyString& insert(size_type index, const MyString& str);
-  // MyString& insert(size_type index, const MyString& str, size_type s_index, size_type count);
+  MyString& insert(size_type index, const MyString& str, size_type s_index, size_type count = npos);
+  iterator insert(iterator pos, char ch);
+  iterator insert(iterator pos, size_type count, char ch);
 
   MyString& erase(size_type index = 0, size_type count = npos);
+  iterator erase(iterator position);
+  iterator erase(iterator first, iterator last);
 
   MyString substr(size_type pos = 0, size_type count = npos) const;
+
+  size_type find(const MyString& str, size_type pos = 0) const;
+  size_type find(const char* s, size_type pos, size_type count) const;
+  size_type find(const char* s, size_type pos = 0) const;
+  size_type find(char ch, size_type pos = 0) const;
+
+  static const size_type npos;
 
  private:
   // Adjust the storage space size to `new_capacity`. Change `capacity_`
   // accordingly. Caller should ensure `new_capacity` > `size_`.
   void reallocate(size_type new_capacity);
-  
- public: 
-  static const size_type npos;
 
- private:
   size_type size_;
   size_type capacity_;
   value_type* data_;
@@ -171,5 +184,8 @@ template <class Iterator>
 Iterator operator+(MyString::difference_type n, Iterator it);
 
 std::ostream& operator<<(std::ostream& os, const MyString& s);
+
+bool operator==(const MyString& lhs, const MyString& rhs);
+bool operator!=(const MyString& lhs, const MyString& rhs);
 
 #endif  // _MYSTRING_H_

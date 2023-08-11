@@ -148,7 +148,7 @@ void MyString::pop_back() {
 
 void MyString::insert_preparation(
     size_type new_size, difference_type bound, size_type count) {
-  if (new_size > capacity_) reallocate(new_size);
+  reserve(new_size);
   for (difference_type i = new_size - 1; i >= bound; i--) {
     data_[i] = data_[i - count];
   }
@@ -156,9 +156,8 @@ void MyString::insert_preparation(
 
 MyString& MyString::insert(size_type index, size_type count, char ch) {
   const size_type new_size = size_ + count;
-  const difference_type bound = index + count;
-  insert_preparation(new_size, bound, count);
-  for (size_type i = index; i < bound; i++) data_[i] = ch;
+  insert_preparation(new_size, index + count, count);
+  memset(data_ + index, ch, count);
   data_[new_size] = '\0';
   size_ = new_size;
   return *this;
@@ -178,24 +177,72 @@ MyString& MyString::insert(size_type index, const char* s, size_type count) {
 }
 
 MyString& MyString::insert(size_type index, const MyString& str) {
-  return insert(index, str.data_, str.size_);
+  return insert(index, str, 0, str.size_);
 }
 
-// MyString& MyString::insert(size_type index, const MyString& str, size_type s_index, size_type count) {
+MyString& MyString::insert(size_type index, const MyString& str, size_type s_index, size_type count) {
+  count = std::min(count, str.size_ - s_index);
+  return insert(index, str.data_ + s_index, count);
+}
 
-// }
+MyString::iterator MyString::insert(iterator pos, char ch) {
+  return insert(pos, 1, ch);
+}
+
+MyString::iterator MyString::insert(iterator pos, size_type count, char ch) {
+  size_type index = pos - begin();
+  insert(index, count, ch);
+  return {data_ + index};
+}
 
 MyString& MyString::erase(size_type index, size_type count) {
   count = std::min(count, size_ - index);
   for (size_type i = index; i < size_ - count + 1; i++) {
     data_[i] = data_[i + count];
   }
+  size_ -= count;
   return *this;
+}
+
+MyString::iterator MyString::erase(iterator position) {
+  return erase(position, position + 1);
+}
+
+MyString::iterator MyString::erase(iterator first, iterator last) {
+  erase(first - begin(), last - first);
+  return first;
 }
 
 MyString MyString::substr(size_type pos, size_type count) const {
   count = std::min(count, size_ - pos);
   return {*this, pos, count};
+}
+
+MyString::size_type MyString::find(const MyString& str, size_type pos) const {
+  return find(str.data_, pos, str.size_);
+}
+
+MyString::size_type MyString::find(const char* s, size_type pos, size_type count) const {
+  for (size_type i = pos; i <= size_; i++) {
+    if (count > size_ - i) return npos;
+    bool diff = false;
+    for (size_type j = 0; j < count; j++) {
+      if (data_[i + j] != s[j]) {
+        diff = true;
+        break;
+      }
+    }
+    if (diff == false) return i;
+  }
+  return npos;
+}
+
+MyString::size_type MyString::find(const char* s, size_type pos) const {
+  return find(s, pos, strlen(s));
+}
+
+MyString::size_type MyString::find(char ch, size_type pos) const {
+  return find(&ch, pos, 1);
 }
 
 void MyString::reallocate(size_type new_capacity) {
@@ -219,3 +266,11 @@ template MyString::iterator operator+(
     MyString::difference_type n, MyString::iterator it);
 template MyString::const_iterator operator+(
     MyString::difference_type n, MyString::const_iterator it);
+
+bool operator==(const MyString& lhs, const MyString& rhs) {
+  return lhs.size() == rhs.size() && memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
+}
+
+bool operator!=(const MyString& lhs, const MyString& rhs) {
+  return !(lhs == rhs);
+}
